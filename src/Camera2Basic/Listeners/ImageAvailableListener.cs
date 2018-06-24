@@ -7,54 +7,47 @@ namespace Camera2Basic.Listeners
 {
     public class ImageAvailableListener : Java.Lang.Object, ImageReader.IOnImageAvailableListener
     {
-        public ImageAvailableListener(Camera2BasicFragment fragment, File file)
+        private readonly Camera2BasicFragment _owner;
+        private readonly File _file;
+
+        public ImageAvailableListener(Camera2BasicFragment fragment)
         {
             if (fragment == null)
-                throw new System.ArgumentNullException("fragment");
-            if (file == null)
-                throw new System.ArgumentNullException("file");
+                throw new System.ArgumentNullException(nameof(fragment));
 
-            owner = fragment;
-            this.file = file;
+            _owner = fragment;
         }
 
-        private readonly File file;
-        private readonly Camera2BasicFragment owner;
 
         //public File File { get; private set; }
         //public Camera2BasicFragment Owner { get; private set; }
 
         public void OnImageAvailable(ImageReader reader)
         {
-            owner._backgroundHandler.Post(new ImageSaver(reader.AcquireNextImage(), file));
+            _owner._backgroundHandler.Post(new ImageSaver(reader.AcquireNextImage(), _owner.ImageFile));
         }
 
         // Saves a JPEG {@link Image} into the specified {@link File}.
         private class ImageSaver : Java.Lang.Object, IRunnable
         {
             // The JPEG image
-            private Image mImage;
+            private readonly Image _image;
 
             // The file we save the image into.
-            private File mFile;
+            private readonly File _imageFile;
 
-            public ImageSaver(Image image, File file)
+            public ImageSaver(Image image, File imageFile)
             {
-                if (image == null)
-                    throw new System.ArgumentNullException("image");
-                if (file == null)
-                    throw new System.ArgumentNullException("file");
-
-                mImage = image;
-                mFile = file;
+                _image = image ?? throw new System.ArgumentNullException(nameof(image));
+                _imageFile = imageFile ?? throw new System.ArgumentNullException(nameof(imageFile));
             }
 
             public void Run()
             {
-                ByteBuffer buffer = mImage.GetPlanes()[0].Buffer;
+                ByteBuffer buffer = _image.GetPlanes()[0].Buffer;
                 byte[] bytes = new byte[buffer.Remaining()];
                 buffer.Get(bytes);
-                using (var output = new FileOutputStream(mFile))
+                using (var output = new FileOutputStream(_imageFile))
                 {
                     try
                     {
@@ -66,7 +59,7 @@ namespace Camera2Basic.Listeners
                     }
                     finally
                     {
-                        mImage.Close();
+                        _image.Close();
                     }
                 }
             }

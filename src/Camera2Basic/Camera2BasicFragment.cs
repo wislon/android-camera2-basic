@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reactive.Concurrency;
 using Android;
 using Android.App;
 using Android.Content;
@@ -21,6 +22,7 @@ using Java.Util;
 using Java.Util.Concurrent;
 using Boolean = Java.Lang.Boolean;
 using Math = Java.Lang.Math;
+using Observable = System.Reactive.Linq.Observable;
 using Orientation = Android.Content.Res.Orientation;
 
 namespace Camera2Basic
@@ -85,8 +87,10 @@ namespace Camera2Basic
         // An {@link ImageReader} that handles still image capture.
         private ImageReader _imageReader;
 
-        // This is the output file for our picture.
-        public File ImageFile;
+        /// <summary>
+        /// This is the output file for our picture.
+        /// </summary>
+        public File ImageFile { get; private set; }
 
         // This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
         // still image is ready to be saved.
@@ -115,6 +119,9 @@ namespace Camera2Basic
 
         // A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
         public CameraCaptureListener CaptureCallback;
+
+        private IDisposable _timelapseTimer;
+        private string _imagesDirectory;
 
         // Shows a {@link Toast} on the UI thread.
         public void ShowToast(string text)
@@ -176,15 +183,14 @@ namespace Camera2Basic
             {
                 return (Size)Collections.Min(bigEnough, new CompareSizesByArea());
             }
-            else if (notBigEnough.Count > 0)
+
+            if (notBigEnough.Count > 0)
             {
                 return (Size)Collections.Max(notBigEnough, new CompareSizesByArea());
             }
-            else
-            {
-                Log.Error(TAG, "Couldn't find any suitable preview size");
-                return choices[0];
-            }
+
+            Log.Error(TAG, "Couldn't find any suitable preview size");
+            return choices[0];
         }
 
         public static Camera2BasicFragment NewInstance()
@@ -223,9 +229,10 @@ namespace Camera2Basic
         public override void OnActivityCreated(Bundle savedInstanceState)
         {
             base.OnActivityCreated(savedInstanceState);
-            ImageFile = new File(Activity.GetExternalFilesDir(null), "pic.jpg");
+            _imagesDirectory = Activity.GetExternalFilesDir(null).AbsolutePath;
+            _onImageAvailableListener = new ImageAvailableListener(this);
+
             CaptureCallback = new CameraCaptureListener(this);
-            _onImageAvailableListener = new ImageAvailableListener(this, ImageFile);
         }
 
         public override void OnResume()
@@ -572,18 +579,40 @@ namespace Camera2Basic
         {
             if (_btnStartStop.Text == Resources.GetString(Resource.String.start_picture))
             {
-                _btnStartStop.Text = Resources.GetString(Resource.String.stop_picture);
-                _btnStartStop.SetBackgroundColor(Color.Red);
-                //LockFocus();
+                _timelapseTimer =
+                    Observable
+                        .Timer(TimeSpan.Zero, TimeSpan.FromSeconds(3))
+                        .Subscribe(l =>
+                        {
+                            Activity.RunOnUiThread(() =>
+                            {
+                                if (l == 0)
+                                {
+                                    _btnStartStop.Text = Resources.GetString(Resource.String.stop_picture);
+                                    _btnStartStop.SetBackgroundColor(Color.Red);
+                                }
+                                Log.Debug(TAG, $"Taking Picture at {DateTime.Now:T}");
+                                string fileName = $"{DateTime.Now:s}".Replace('T', '-').Replace(':', '-');
+                                ImageFile = new File(_imagesDirectory, $"{fileName}.jpg");
+                                LockFocus();
+                            });
+                        });
             }
             else
             {
+                if (_timelapseTimer == null) return;
+                Log.Debug(TAG, $"Stopped Taking Pictures at {DateTime.Now:T}");
+
+                _timelapseTimer.Dispose();
+                _timelapseTimer = null;
                 _btnStartStop.Text = Resources.GetString(Resource.String.start_picture);
                 _btnStartStop.SetBackgroundColor(Color.Green);
             }
         }
 
-        // Lock the focus as the first step for a still image capture.
+        /// <summary>
+        /// Lock the focus as the first step for a still image capture.
+        /// </summary>
         private void LockFocus()
         {
             try
@@ -593,8 +622,8 @@ namespace Camera2Basic
                 PreviewRequestBuilder.Set(CaptureRequest.ControlAfTrigger, (int)ControlAFTrigger.Start);
                 // Tell #CaptureCallback to wait for the lock.
                 CurrentCameraState = STATE_WAITING_LOCK;
-                CaptureSession.Capture(PreviewRequestBuilder.Build(), CaptureCallback,
-                        _backgroundHandler);
+                // this will kick off the image-capture pipeline
+                CaptureSession.Capture(PreviewRequestBuilder.Build(), CaptureCallback, _backgroundHandler);
             }
             catch (CameraAccessException e)
             {

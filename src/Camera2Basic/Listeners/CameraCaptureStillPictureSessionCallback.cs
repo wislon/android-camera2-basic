@@ -12,7 +12,8 @@ namespace Camera2Basic.Listeners
         public CameraCaptureStillPictureSessionCallback(Camera2BasicFragment owner)
         {
             if (owner == null)
-                throw new System.ArgumentNullException("owner");
+                throw new System.ArgumentNullException(nameof(owner));
+
             this.owner = owner;
         }
 
