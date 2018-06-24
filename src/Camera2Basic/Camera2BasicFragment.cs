@@ -581,7 +581,7 @@ namespace Camera2Basic
             {
                 _timelapseTimer =
                     Observable
-                        .Timer(TimeSpan.Zero, TimeSpan.FromSeconds(3))
+                        .Timer(TimeSpan.Zero, TimeSpan.FromSeconds(5))
                         .Subscribe(l =>
                         {
                             Activity.RunOnUiThread(() =>
