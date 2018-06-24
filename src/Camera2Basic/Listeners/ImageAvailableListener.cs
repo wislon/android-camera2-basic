@@ -26,7 +26,7 @@ namespace Camera2Basic.Listeners
 
         public void OnImageAvailable(ImageReader reader)
         {
-            owner.mBackgroundHandler.Post(new ImageSaver(reader.AcquireNextImage(), file));
+            owner._backgroundHandler.Post(new ImageSaver(reader.AcquireNextImage(), file));
         }
 
         // Saves a JPEG {@link Image} into the specified {@link File}.

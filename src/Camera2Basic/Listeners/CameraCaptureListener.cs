@@ -27,7 +27,7 @@ namespace Camera2Basic.Listeners
 
         private void Process(CaptureResult result)
         {
-            switch (owner.mState)
+            switch (owner.CurrentCameraState)
             {
                 case Camera2BasicFragment.STATE_WAITING_LOCK:
                     {
@@ -45,7 +45,7 @@ namespace Camera2Basic.Listeners
                             if (aeState == null ||
                                     aeState.IntValue() == ((int)ControlAEState.Converged))
                             {
-                                owner.mState = Camera2BasicFragment.STATE_PICTURE_TAKEN;
+                                owner.CurrentCameraState = Camera2BasicFragment.STATE_PICTURE_TAKEN;
                                 owner.CaptureStillPicture();
                             }
                             else
@@ -63,7 +63,7 @@ namespace Camera2Basic.Listeners
                                 aeState.IntValue() == ((int)ControlAEState.Precapture) ||
                                 aeState.IntValue() == ((int)ControlAEState.FlashRequired))
                         {
-                            owner.mState = Camera2BasicFragment.STATE_WAITING_NON_PRECAPTURE;
+                            owner.CurrentCameraState = Camera2BasicFragment.STATE_WAITING_NON_PRECAPTURE;
                         }
                         break;
                     }
@@ -73,7 +73,7 @@ namespace Camera2Basic.Listeners
                         Integer aeState = (Integer)result.Get(CaptureResult.ControlAeState);
                         if (aeState == null || aeState.IntValue() != ((int)ControlAEState.Precapture))
                         {
-                            owner.mState = Camera2BasicFragment.STATE_PICTURE_TAKEN;
+                            owner.CurrentCameraState = Camera2BasicFragment.STATE_PICTURE_TAKEN;
                             owner.CaptureStillPicture();
                         }
                         break;

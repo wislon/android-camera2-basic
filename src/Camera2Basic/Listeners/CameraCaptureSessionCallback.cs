@@ -21,24 +21,24 @@ namespace Camera2Basic.Listeners
         public override void OnConfigured(CameraCaptureSession session)
         {
             // The camera is already closed
-            if (null == owner.mCameraDevice)
+            if (null == owner.CameraDevice)
             {
                 return;
             }
 
             // When the session is ready, we start displaying the preview.
-            owner.mCaptureSession = session;
+            owner.CaptureSession = session;
             try
             {
                 // Auto focus should be continuous for camera preview.
-                owner.mPreviewRequestBuilder.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousPicture);
+                owner.PreviewRequestBuilder.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousPicture);
                 // Flash is automatically enabled when necessary.
-                owner.SetAutoFlash(owner.mPreviewRequestBuilder);
+                owner.SetAutoFlash(owner.PreviewRequestBuilder);
 
                 // Finally, we start displaying the camera preview.
-                owner.mPreviewRequest = owner.mPreviewRequestBuilder.Build();
-                owner.mCaptureSession.SetRepeatingRequest(owner.mPreviewRequest,
-                        owner.mCaptureCallback, owner.mBackgroundHandler);
+                owner.PreviewRequest = owner.PreviewRequestBuilder.Build();
+                owner.CaptureSession.SetRepeatingRequest(owner.PreviewRequest,
+                        owner.CaptureCallback, owner._backgroundHandler);
             }
             catch (CameraAccessException e)
             {

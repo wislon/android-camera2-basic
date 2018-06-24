@@ -20,8 +20,8 @@ namespace Camera2Basic.Listeners
         {
             // If something goes wrong with the save (or the handler isn't even 
             // registered, this code will toast a success message regardless...)
-            owner.ShowToast("Saved: " + owner.mFile);
-            Log.Debug(TAG, owner.mFile.ToString());
+            owner.ShowToast("Saved: " + owner.ImageFile);
+            Log.Debug(TAG, owner.ImageFile.ToString());
             owner.UnlockFocus();
         }
     }
